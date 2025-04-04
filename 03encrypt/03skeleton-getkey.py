@@ -41,11 +41,11 @@ def hook_mem_access(uc, access, address, size, value, user_data):
                 %(address, size))
 
 # Read the ELF binary
-with open("[HERE]", "rb") as f:
+with open("03encrypt", "rb") as f:
     binary = f.read()
 
 # Set the memory address where the code will be loaded (base address)
-ADDRESS = [HERE]
+ADDRESS = 0x400000
 
 # Create an instance of the Unicorn Engine emulating x64
 uc = Uc(UC_ARCH_X86, UC_MODE_64)
@@ -56,31 +56,32 @@ uc.mem_map(SCRATCH_ADDR, SCRATCH_SIZE)
 uc.reg_write(UC_X86_REG_FS_BASE, SEGMENT_ADDR)
 
 # Map memory for the code
-uc.mem_map(ADDRESS, [HERE])  # filesize?
+uc.mem_map(ADDRESS, 10*1024*1024)  # filesize?
 
 # Write the ELF binary to the memory
 uc.mem_write(ADDRESS, binary)
 
 # Set the string and offset values in memory
-seed = [HERE]
-key_length = [HERE]
+seed = 0x65bcea5f
+key_length = 16
 
+uc.mem_write(ADDRESS + 0x4000, b"16")
 
-uc.reg_write(UC_X86_REG_[HERE], [HERE])  # Set the first argument (seed)
-uc.reg_write(UC_X86_REG_[HERE], [HERE])  # Set the second argument (key output address)
-uc.reg_write(UC_X86_REG_[HERE], [HERE])  # Set the third argument (key length)
+uc.reg_write(UC_X86_REG_RDI, seed)  # Set the first argument (seed)
+uc.reg_write(UC_X86_REG_RSI, ADDRESS+0x4000)  # Set the second argument (key output address)
+uc.reg_write(UC_X86_REG_RDX, key_length)  # Set the third argument (key length)
 
-uc.reg_write(UC_X86_REG_RSP, [HERE])  # Set the stack if needed
+uc.reg_write(UC_X86_REG_RSP, 0x5500)  # Set the stack if needed
 
-#uc.hook_add(UC_HOOK_CODE, hook_code, None, ADDRESS + 0x2de5, ADDRESS + 0x2e4b)
-#uc.hook_add(UC_HOOK_MEM_READ, hook_mem_access)
+uc.hook_add(UC_HOOK_CODE, hook_code, None, ADDRESS + 0x2de5, ADDRESS + 0x2e4b)
+uc.hook_add(UC_HOOK_MEM_READ, hook_mem_access)
 
 # Emulate code execution
 try:
-    uc.emu_start(ADDRESS + [HERE], ADDRESS + [HERE])  # Address of the call
+    uc.emu_start(ADDRESS + 0x2de5, ADDRESS + 0x2e4b)  # Address of the call
 
     # Read the result from memory (assuming the C program prints the result)
-    result = uc.mem_read([HERE], key_length)
+    result = uc.mem_read(ADDRESS+0x4000, 16)
     print(f"Deciphered string: {result}")
 
 except UcError as e:

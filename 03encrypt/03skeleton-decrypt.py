@@ -13,8 +13,8 @@ from Crypto.Cipher import AES
 import os
 import sys
 
-iv = b'[HERE]'
-key = b'[HERE]'
+iv = b'AAAABBBECCCCDDDD'
+key = b'<\xde\x92}\xa3`\x07\x08\xeeD\x8a;\xa1\x14\xdb\xda'
 
 def decrypt_aes_cbc(ciphertext, key, iv):
     cipher = AES.new(key, AES.MODE_CBC, iv)
