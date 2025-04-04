@@ -33,37 +33,38 @@ def hook_mem_access(uc, access, address, size, value, user_data):
                 %(address, size))
 
 # Read the ELF binary
-with open("[HERE]", "rb") as f:
+with open("02cipher", "rb") as f:
     binary = f.read()
 
 # Set the memory address where the code will be loaded (base address)
-ADDRESS = [HERE]
+ADDRESS = 0x100000
 
 # Create an instance of the Unicorn Engine emulating x64
 uc = Uc(UC_ARCH_X86, UC_MODE_64)
 
 # Map memory for the code
-uc.mem_map(ADDRESS, [HERE])  # 2 MB
+uc.mem_map(ADDRESS, 2*1024*1024)  # 2 MB
 
 # Write the ELF binary to the memory
 uc.mem_write(ADDRESS, binary)
 
 # Set the string and offset values in memory
-input_str = b"[HERE]"
-uc.mem_write(ADDRESS + [HERE], input_str)  # Address where input_str is stored (binary 16K, string at 17K)
-uc.reg_write(UC_X86_REG_[HERE], [HERE])  # Set the first argument (address of the string)
+input_str = b"E0TgnZ0 h0JT0k uaQQT0J kzQkZ5 ZkQZkyk05!"
+uc.mem_write(ADDRESS + 0x4000, input_str)  # Address where input_str is stored (binary 16K, string at 17K)
+uc.reg_write(UC_X86_REG_RDI, ADDRESS+0x4000)  # Set the first argument (address of the string)
 
-uc.reg_write(UC_X86_REG_RSP, [HERE])  # Set the stack if needed
+uc.reg_write(UC_X86_REG_RSP, ADDRESS+0x6000)  # Set the stack if needed
 
-#uc.hook_add(UC_HOOK_CODE, hook_code, None, ADDRESS, ADDRESS + (3*1024*1024))
-#uc.hook_add(UC_HOOK_MEM_READ, hook_mem_access)
+# uc.hook_add(UC_HOOK_CODE, hook_code, None, ADDRESS, ADDRESS + (3*1024*1024))
+# uc.hook_add(UC_HOOK_MEM_READ, hook_mem_access)
+# uc.hook_add(UC_HOOK_MEM_WRITE, hook_mem_access)
 
 # Emulate code execution
 try:
-    uc.emu_start(ADDRESS + [HERE], ADDRESS + [HERE])  # Address of the call
+    uc.emu_start(ADDRESS + 0x12b5, ADDRESS + 0x13cf)  # Address of the call
 
     # Read the result from memory (assuming the C program prints the result)
-    result = uc.mem_read(ADDRESS + [HERE], len(input_str)).decode("utf-8")
+    result = uc.mem_read(ADDRESS + 0x4000, len(input_str)).decode("utf-8")
     print(f"Deciphered string: {result}")
 
 except UcError as e:
